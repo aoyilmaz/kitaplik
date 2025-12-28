@@ -1,0 +1,24 @@
+# Sanal ortam
+venv/
+.venv/
+
+# Veritabanı (herkesin kendi kitaplığı olacak)
+*.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kapak görselleri (kullanıcıya özel)
+assets/covers/*
+!assets/covers/.gitkeep

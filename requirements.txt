@@ -1,0 +1,5 @@
+# Kitaplık Uygulaması - Bağımlılıklar
+# Kurulum: pip install -r requirements.txt
+
+PyQt6>=6.5.0
+requests>=2.31.0    # API çağrıları için (ileride kullanacağız)
