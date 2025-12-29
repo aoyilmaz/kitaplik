@@ -294,7 +294,9 @@ class ManualBookDialog(QDialog):
         
         # Sol: Form
         form_layout = QFormLayout()
-        form_layout.setSpacing(8)
+        form_layout.setSpacing(10)
+        form_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        form_layout.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         
         self.title_input = QLineEdit()
         self.title_input.setPlaceholderText("Kitap başlığı (zorunlu)")
@@ -316,33 +318,63 @@ class ManualBookDialog(QDialog):
         self.publisher_input.setPlaceholderText("Yayınevi")
         form_layout.addRow("Yayınevi:", self.publisher_input)
         
+        # Yıl ve Sayfa yan yana
+        year_page_layout = QHBoxLayout()
         self.year_input = QSpinBox()
         self.year_input.setRange(0, 2100)
         self.year_input.setSpecialValueText("-")
-        form_layout.addRow("Yayın Yılı:", self.year_input)
-        
+        self.year_input.setFixedWidth(80)
+        year_page_layout.addWidget(self.year_input)
+        year_page_layout.addWidget(QLabel("Sayfa:"))
         self.page_count_input = QSpinBox()
         self.page_count_input.setRange(0, 99999)
         self.page_count_input.setSpecialValueText("-")
-        form_layout.addRow("Sayfa Sayısı:", self.page_count_input)
+        self.page_count_input.setFixedWidth(80)
+        year_page_layout.addWidget(self.page_count_input)
+        year_page_layout.addStretch()
+        form_layout.addRow("Yayın Yılı:", year_page_layout)
         
+        # Dil ve Format yan yana
+        lang_format_layout = QHBoxLayout()
         self.language_input = QComboBox()
         self.language_input.setEditable(True)
         self.language_input.addItems(["", "tr", "en", "de", "fr", "es", "it", "ru", "ar", "ja", "zh"])
-        form_layout.addRow("Dil:", self.language_input)
+        self.language_input.setFixedWidth(80)
+        lang_format_layout.addWidget(self.language_input)
+        lang_format_layout.addWidget(QLabel("Format:"))
+        self.format_input = QComboBox()
+        self.format_input.addItems(["Karton Kapak", "Ciltli", "E-Kitap", "Sesli Kitap"])
+        lang_format_layout.addWidget(self.format_input)
+        lang_format_layout.addStretch()
+        form_layout.addRow("Dil:", lang_format_layout)
         
         self.categories_input = QLineEdit()
         self.categories_input.setPlaceholderText("Roman, Bilim Kurgu, Tarih...")
         form_layout.addRow("Kategoriler:", self.categories_input)
         
-        self.format_input = QComboBox()
-        self.format_input.addItems(["📕 Karton Kapak", "📗 Ciltli", "📱 E-Kitap", "🎧 Sesli Kitap"])
-        form_layout.addRow("Format:", self.format_input)
+        # Çeviri bilgileri
+        form_layout.addRow(QLabel(""))  # Boşluk
+        form_layout.addRow(QLabel("<b>Çeviri Bilgileri</b>"), QLabel(""))
+        
+        self.translator_input = QLineEdit()
+        self.translator_input.setPlaceholderText("Çevirmen adı")
+        form_layout.addRow("Çevirmen:", self.translator_input)
+        
+        self.original_title_input = QLineEdit()
+        self.original_title_input.setPlaceholderText("Orijinal başlık")
+        form_layout.addRow("Orijinal Başlık:", self.original_title_input)
+        
+        self.original_language_input = QComboBox()
+        self.original_language_input.setEditable(True)
+        self.original_language_input.addItems(["", "en", "de", "fr", "es", "ru", "ja", "zh"])
+        self.original_language_input.setFixedWidth(80)
+        form_layout.addRow("Orijinal Dil:", self.original_language_input)
         
         tab1_layout.addLayout(form_layout, stretch=2)
         
         # Sağ: Kapak
         cover_layout = QVBoxLayout()
+        cover_layout.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
         
         self.cover_label = QLabel()
         self.cover_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -363,7 +395,7 @@ class ManualBookDialog(QDialog):
         self.select_cover_btn.clicked.connect(self.select_cover_file)
         cover_btn_layout.addWidget(self.select_cover_btn)
         
-        self.remove_cover_btn = QPushButton("🗑️ Kapağı Kaldır")
+        self.remove_cover_btn = QPushButton("🗑️ Kaldır")
         self.remove_cover_btn.clicked.connect(self.remove_cover)
         cover_btn_layout.addWidget(self.remove_cover_btn)
         
@@ -373,71 +405,105 @@ class ManualBookDialog(QDialog):
         
         self.tabs.addTab(tab1, "📚 Temel Bilgiler")
         
-        # === TAB 2: ÇEVİRİ & SERİ ===
+        # === TAB 2: SERİ ===
         tab2 = QWidget()
-        tab2_layout = QFormLayout(tab2)
+        tab2_layout = QVBoxLayout(tab2)
         tab2_layout.setSpacing(10)
         
-        self.translator_input = QLineEdit()
-        self.translator_input.setPlaceholderText("Çevirmen adı")
-        tab2_layout.addRow("Çevirmen:", self.translator_input)
+        # Seri bilgileri formu
+        series_form = QFormLayout()
+        series_form.setSpacing(10)
+        series_form.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
         
-        self.original_title_input = QLineEdit()
-        self.original_title_input.setPlaceholderText("Orijinal başlık")
-        tab2_layout.addRow("Orijinal Başlık:", self.original_title_input)
+        # Seri adı - autocomplete ile
+        self.series_name_input = QComboBox()
+        self.series_name_input.setEditable(True)
+        self.series_name_input.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
+        self.series_name_input.addItem("")  # Boş seçenek
+        self.series_name_input.currentTextChanged.connect(self.on_series_changed)
         
-        self.original_language_input = QComboBox()
-        self.original_language_input.setEditable(True)
-        self.original_language_input.addItems(["", "en", "de", "fr", "es", "ru", "ja", "zh"])
-        tab2_layout.addRow("Orijinal Dil:", self.original_language_input)
+        # Mevcut serileri ekle
+        import sys
+        from pathlib import Path
+        sys.path.append(str(Path(__file__).parent.parent))
+        import database as db
+        for series_name in db.get_series_names():
+            self.series_name_input.addItem(series_name)
         
-        tab2_layout.addRow(QLabel(""))  # Boşluk
-        
-        self.series_name_input = QLineEdit()
-        self.series_name_input.setPlaceholderText("Seri adı (örn: Harry Potter)")
-        tab2_layout.addRow("Seri Adı:", self.series_name_input)
+        series_form.addRow("Seri Adı:", self.series_name_input)
         
         self.series_order_input = QSpinBox()
         self.series_order_input.setRange(0, 999)
         self.series_order_input.setSpecialValueText("-")
-        tab2_layout.addRow("Seri Sırası:", self.series_order_input)
+        self.series_order_input.setFixedWidth(80)
+        series_form.addRow("Sıra No:", self.series_order_input)
         
-        self.tabs.addTab(tab2, "🔄 Çeviri & Seri")
+        tab2_layout.addLayout(series_form)
+        
+        # Serideki diğer kitaplar
+        tab2_layout.addWidget(QLabel("📚 Serideki Diğer Kitaplar:"))
+        
+        self.series_books_list = QListWidget()
+        self.series_books_list.setAlternatingRowColors(True)
+        self.series_books_list.setMaximumHeight(200)
+        tab2_layout.addWidget(self.series_books_list)
+        
+        # Seri istatistikleri
+        self.series_stats_label = QLabel("")
+        self.series_stats_label.setStyleSheet("color: #888; padding: 5px;")
+        tab2_layout.addWidget(self.series_stats_label)
+        
+        tab2_layout.addStretch()
+        
+        self.tabs.addTab(tab2, "📖 Seri")
         
         # === TAB 3: OKUMA TAKİBİ ===
         tab3 = QWidget()
         tab3_layout = QFormLayout(tab3)
-        tab3_layout.setSpacing(10)
+        tab3_layout.setSpacing(12)
+        tab3_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        tab3_layout.setContentsMargins(20, 20, 20, 20)
         
         self.status_input = QComboBox()
-        self.status_input.addItems(["📕 Okunmadı", "📖 Okunuyor", "📗 Okundu"])
+        self.status_input.addItems([
+            "📕 Okunmadı",
+            "📋 Okuyacağım", 
+            "📖 Okunuyor", 
+            "📗 Okundu",
+            "🚫 Okumayacağım"
+        ])
         self.status_input.currentIndexChanged.connect(self.on_status_changed)
         tab3_layout.addRow("Durum:", self.status_input)
         
         self.current_page_input = QSpinBox()
         self.current_page_input.setRange(0, 99999)
         self.current_page_input.setSpecialValueText("-")
+        self.current_page_input.setFixedWidth(100)
         tab3_layout.addRow("Mevcut Sayfa:", self.current_page_input)
         
         self.start_date_input = QDateEdit()
         self.start_date_input.setCalendarPopup(True)
         self.start_date_input.setSpecialValueText("Seçilmedi")
         self.start_date_input.setDate(QDate(2000, 1, 1))
+        self.start_date_input.setFixedWidth(130)
         tab3_layout.addRow("Başlama Tarihi:", self.start_date_input)
         
         self.finish_date_input = QDateEdit()
         self.finish_date_input.setCalendarPopup(True)
         self.finish_date_input.setSpecialValueText("Seçilmedi")
         self.finish_date_input.setDate(QDate(2000, 1, 1))
+        self.finish_date_input.setFixedWidth(130)
         tab3_layout.addRow("Bitirme Tarihi:", self.finish_date_input)
         
         self.times_read_input = QSpinBox()
         self.times_read_input.setRange(0, 99)
         self.times_read_input.setSpecialValueText("-")
+        self.times_read_input.setFixedWidth(80)
         tab3_layout.addRow("Okuma Sayısı:", self.times_read_input)
         
         self.rating_input = QComboBox()
-        self.rating_input.addItems(["-", "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"])
+        self.rating_input.addItems(["Puansız", "⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"])
+        self.rating_input.setFixedWidth(150)
         tab3_layout.addRow("Puan:", self.rating_input)
         
         self.tabs.addTab(tab3, "📊 Okuma Takibi")
@@ -445,22 +511,24 @@ class ManualBookDialog(QDialog):
         # === TAB 4: NOTLAR ===
         tab4 = QWidget()
         tab4_layout = QVBoxLayout(tab4)
+        tab4_layout.setSpacing(10)
+        tab4_layout.setContentsMargins(15, 15, 15, 15)
         
-        tab4_layout.addWidget(QLabel("Kısa Notlar:"))
+        tab4_layout.addWidget(QLabel("📝 Kısa Notlar:"))
         self.notes_input = QTextEdit()
         self.notes_input.setPlaceholderText("Kısa notlarınız...")
-        self.notes_input.setMaximumHeight(80)
+        self.notes_input.setMaximumHeight(70)
         tab4_layout.addWidget(self.notes_input)
         
-        tab4_layout.addWidget(QLabel("İnceleme / Değerlendirme:"))
+        tab4_layout.addWidget(QLabel("⭐ İnceleme / Değerlendirme:"))
         self.review_input = QTextEdit()
         self.review_input.setPlaceholderText("Detaylı incelemeniz...")
-        tab4_layout.addWidget(self.review_input)
+        tab4_layout.addWidget(self.review_input, stretch=1)
         
-        tab4_layout.addWidget(QLabel("Açıklama / Özet:"))
+        tab4_layout.addWidget(QLabel("📄 Açıklama / Özet:"))
         self.description_input = QTextEdit()
         self.description_input.setPlaceholderText("Kitap açıklaması...")
-        self.description_input.setMaximumHeight(80)
+        self.description_input.setMaximumHeight(70)
         tab4_layout.addWidget(self.description_input)
         
         self.tabs.addTab(tab4, "📝 Notlar")
@@ -468,12 +536,15 @@ class ManualBookDialog(QDialog):
         # === TAB 5: SATIN ALMA & KONUM ===
         tab5 = QWidget()
         tab5_layout = QFormLayout(tab5)
-        tab5_layout.setSpacing(10)
+        tab5_layout.setSpacing(12)
+        tab5_layout.setLabelAlignment(Qt.AlignmentFlag.AlignRight)
+        tab5_layout.setContentsMargins(20, 20, 20, 20)
         
         self.purchase_date_input = QDateEdit()
         self.purchase_date_input.setCalendarPopup(True)
         self.purchase_date_input.setSpecialValueText("Seçilmedi")
         self.purchase_date_input.setDate(QDate(2000, 1, 1))
+        self.purchase_date_input.setFixedWidth(130)
         tab5_layout.addRow("Satın Alma Tarihi:", self.purchase_date_input)
         
         self.purchase_place_input = QLineEdit()
@@ -485,11 +556,13 @@ class ManualBookDialog(QDialog):
         self.purchase_price_input.setRange(0, 99999)
         self.purchase_price_input.setDecimals(2)
         self.purchase_price_input.setSpecialValueText("-")
+        self.purchase_price_input.setFixedWidth(100)
         price_layout.addWidget(self.purchase_price_input)
         self.currency_input = QComboBox()
         self.currency_input.addItems(["TRY", "USD", "EUR", "GBP"])
         self.currency_input.setFixedWidth(70)
         price_layout.addWidget(self.currency_input)
+        price_layout.addStretch()
         tab5_layout.addRow("Fiyat:", price_layout)
         
         self.is_gift_check = QCheckBox("Bu kitap hediye")
@@ -503,7 +576,7 @@ class ManualBookDialog(QDialog):
         
         self.location_input = QLineEdit()
         self.location_input.setPlaceholderText("Salon rafı, Yatak odası...")
-        tab5_layout.addRow("Konum:", self.location_input)
+        tab5_layout.addRow("📍 Konum:", self.location_input)
         
         self.is_borrowed_check = QCheckBox("Ödünç verildi")
         tab5_layout.addRow("", self.is_borrowed_check)
@@ -516,6 +589,7 @@ class ManualBookDialog(QDialog):
         self.borrowed_date_input.setCalendarPopup(True)
         self.borrowed_date_input.setSpecialValueText("Seçilmedi")
         self.borrowed_date_input.setDate(QDate(2000, 1, 1))
+        self.borrowed_date_input.setFixedWidth(130)
         tab5_layout.addRow("Ödünç Tarihi:", self.borrowed_date_input)
         
         self.tabs.addTab(tab5, "💰 Satın Alma")
@@ -523,11 +597,15 @@ class ManualBookDialog(QDialog):
         # === TAB 6: ETİKETLER ===
         tab6 = QWidget()
         tab6_layout = QVBoxLayout(tab6)
+        tab6_layout.setContentsMargins(20, 20, 20, 20)
         
-        tab6_layout.addWidget(QLabel("Etiketler (virgülle ayırın):"))
+        tab6_layout.addWidget(QLabel("🏷️ Etiketler (virgülle ayırın):"))
         self.tags_input = QLineEdit()
         self.tags_input.setPlaceholderText("favori, imzalı, nadir, hediye...")
         tab6_layout.addWidget(self.tags_input)
+        
+        tab6_layout.addWidget(QLabel(""))
+        tab6_layout.addWidget(QLabel("💡 İpucu: Etiketler kitapları filtrelemek ve gruplamak için kullanılır."))
         
         tab6_layout.addStretch()
         
@@ -555,6 +633,55 @@ class ManualBookDialog(QDialog):
         # Okunuyor ise mevcut sayfa aktif
         self.current_page_input.setEnabled(index == 1)
     
+    def on_series_changed(self, series_name: str):
+        """Seri seçildiğinde serideki diğer kitapları göster."""
+        self.series_books_list.clear()
+        self.series_stats_label.setText("")
+        
+        if not series_name or not series_name.strip():
+            return
+        
+        # Serideki kitapları getir
+        import database as db
+        books = db.get_books_in_series(series_name.strip())
+        
+        if not books:
+            self.series_stats_label.setText("Bu seri için henüz başka kitap yok.")
+            return
+        
+        # Mevcut kitap ID'si (düzenleme modundaysa)
+        current_book_id = self.book.get("id") if self.book else None
+        
+        read_count = 0
+        for book in books:
+            # Durum ikonu
+            status_icons = {"read": "✅", "reading": "📖", "unread": "📕"}
+            icon = status_icons.get(book["status"], "📕")
+            
+            if book["status"] == "read":
+                read_count += 1
+            
+            # Sıra numarası
+            order = f"#{book['series_order']}" if book["series_order"] else ""
+            
+            # Mevcut kitap mı?
+            current_marker = " ← Bu kitap" if book["id"] == current_book_id else ""
+            
+            text = f"{icon} {order} {book['title']}{current_marker}"
+            
+            item = QListWidgetItem(text)
+            item.setData(Qt.ItemDataRole.UserRole, book["id"])
+            
+            # Mevcut kitabı vurgula
+            if book["id"] == current_book_id:
+                item.setForeground(Qt.GlobalColor.cyan)
+            
+            self.series_books_list.addItem(item)
+        
+        # İstatistik
+        total = len(books)
+        self.series_stats_label.setText(f"📊 Seride {total} kitap var, {read_count} tanesi okundu ({round(read_count/total*100)}%)")
+    
     def show_cover(self, path: str):
         pixmap = QPixmap(path)
         if not pixmap.isNull():
@@ -581,16 +708,23 @@ class ManualBookDialog(QDialog):
         format_map = {"paperback": 0, "hardcover": 1, "ebook": 2, "audiobook": 3}
         self.format_input.setCurrentIndex(format_map.get(book.get("format", "paperback"), 0))
         
-        # Çeviri & Seri
+        # Çeviri
         self.translator_input.setText(book.get("translator", "") or "")
         self.original_title_input.setText(book.get("original_title", "") or "")
         self.original_language_input.setCurrentText(book.get("original_language", "") or "")
-        self.series_name_input.setText(book.get("series_name", "") or "")
+        
+        # Seri - önce değeri ayarla, sonra liste güncellenecek
+        series_name = book.get("series_name", "") or ""
+        self.series_name_input.setCurrentText(series_name)
         if book.get("series_order"):
             self.series_order_input.setValue(book["series_order"])
         
+        # Seri listesini güncelle
+        if series_name:
+            self.on_series_changed(series_name)
+        
         # Okuma takibi
-        status_map = {"unread": 0, "reading": 1, "read": 2}
+        status_map = {"unread": 0, "to_read": 1, "reading": 2, "read": 3, "wont_read": 4}
         self.status_input.setCurrentIndex(status_map.get(book.get("status"), 0))
         if book.get("current_page"):
             self.current_page_input.setValue(book["current_page"])
@@ -701,7 +835,7 @@ class ManualBookDialog(QDialog):
     
     def get_data(self) -> dict:
         format_map = {0: "paperback", 1: "hardcover", 2: "ebook", 3: "audiobook"}
-        status_map = {0: "unread", 1: "reading", 2: "read"}
+        status_map = {0: "unread", 1: "to_read", 2: "reading", 3: "read", 4: "wont_read"}
         
         return {
             # Temel
@@ -721,7 +855,7 @@ class ManualBookDialog(QDialog):
             "translator": self.translator_input.text().strip() or None,
             "original_title": self.original_title_input.text().strip() or None,
             "original_language": self.original_language_input.currentText().strip() or None,
-            "series_name": self.series_name_input.text().strip() or None,
+            "series_name": self.series_name_input.currentText().strip() or None,
             "series_order": self.series_order_input.value() or None,
             
             # Okuma takibi

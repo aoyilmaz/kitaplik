@@ -48,7 +48,7 @@ def get_stylesheet(theme: str = "dark") -> str:
     return f"""
     /* ===== GENEL ===== */
     * {{
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         font-size: 13px;
     }}
     

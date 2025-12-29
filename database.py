@@ -144,6 +144,32 @@ def init_database():
         )
     """)
     
+    # Alıntılar tablosu
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS quotes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            book_id INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            page_number INTEGER,
+            chapter TEXT,
+            note TEXT,
+            is_favorite INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Okuma hedefleri tablosu
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reading_goals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            year INTEGER NOT NULL,
+            target_books INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(year)
+        )
+    """)
+    
     # Varsayılan rafları ekle (yoksa)
     now = datetime.now().isoformat()
     default_shelves = [
@@ -202,6 +228,7 @@ def _migrate_database():
         ("borrowed_to", "TEXT", None),
         ("borrowed_date", "TEXT", None),
         ("tags", "TEXT", None),
+        ("reading_list_order", "INTEGER", None),  # Okuma listesi sırası
     ]
     
     for col_name, col_type, default in new_columns:
@@ -1072,6 +1099,591 @@ def get_year_summary(year: int) -> dict:
     
     conn.close()
     return summary
+
+
+# ==================== ALINTILAR ====================
+
+def add_quote(book_id: int, text: str, page_number: int = None, chapter: str = None, note: str = None) -> int:
+    """Yeni alıntı ekler."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    now = datetime.now().isoformat()
+    
+    cursor.execute("""
+        INSERT INTO quotes (book_id, text, page_number, chapter, note, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, (book_id, text, page_number, chapter, note, now))
+    
+    quote_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return quote_id
+
+
+def get_quotes_by_book(book_id: int) -> list:
+    """Bir kitabın alıntılarını getirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM quotes WHERE book_id = ? ORDER BY created_at DESC
+    """, (book_id,))
+    
+    quotes = cursor.fetchall()
+    conn.close()
+    
+    return quotes
+
+
+def get_all_quotes() -> list:
+    """Tüm alıntıları kitap bilgisiyle birlikte getirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT q.*, b.title as book_title, b.author as book_author
+        FROM quotes q
+        JOIN books b ON q.book_id = b.id
+        ORDER BY q.created_at DESC
+    """)
+    
+    quotes = cursor.fetchall()
+    conn.close()
+    
+    return quotes
+
+
+def update_quote(quote_id: int, **kwargs) -> bool:
+    """Alıntıyı günceller."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    allowed_fields = ["text", "page_number", "chapter", "note", "is_favorite"]
+    updates = []
+    values = []
+    
+    for field, value in kwargs.items():
+        if field in allowed_fields:
+            updates.append(f"{field} = ?")
+            values.append(value)
+    
+    if not updates:
+        return False
+    
+    values.append(quote_id)
+    
+    cursor.execute(f"""
+        UPDATE quotes SET {", ".join(updates)} WHERE id = ?
+    """, values)
+    
+    conn.commit()
+    conn.close()
+    
+    return cursor.rowcount > 0
+
+
+def delete_quote(quote_id: int) -> bool:
+    """Alıntıyı siler."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM quotes WHERE id = ?", (quote_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return cursor.rowcount > 0
+
+
+def toggle_quote_favorite(quote_id: int) -> bool:
+    """Alıntının favori durumunu değiştirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        UPDATE quotes SET is_favorite = CASE WHEN is_favorite = 1 THEN 0 ELSE 1 END
+        WHERE id = ?
+    """, (quote_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return cursor.rowcount > 0
+
+
+# ==================== OKUMA HEDEFLERİ ====================
+
+def set_reading_goal(year: int, target_books: int) -> int:
+    """Okuma hedefi belirler veya günceller."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    now = datetime.now().isoformat()
+    
+    cursor.execute("""
+        INSERT OR REPLACE INTO reading_goals (year, target_books, created_at)
+        VALUES (?, ?, ?)
+    """, (year, target_books, now))
+    
+    goal_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return goal_id
+
+
+def get_reading_goal(year: int) -> dict:
+    """Belirli yılın okuma hedefini getirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM reading_goals WHERE year = ?", (year,))
+    row = cursor.fetchone()
+    
+    if row:
+        goal = dict(row)
+        
+        # Okunan kitap sayısını hesapla
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM books 
+            WHERE status = 'read' 
+                AND finish_date IS NOT NULL
+                AND strftime('%Y', finish_date) = ?
+        """, (str(year),))
+        goal["completed"] = cursor.fetchone()["count"]
+        goal["progress"] = round((goal["completed"] / goal["target_books"]) * 100, 1) if goal["target_books"] > 0 else 0
+    else:
+        goal = None
+    
+    conn.close()
+    return goal
+
+
+def get_all_reading_goals() -> list:
+    """Tüm okuma hedeflerini getirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM reading_goals ORDER BY year DESC")
+    goals = []
+    
+    for row in cursor.fetchall():
+        goal = dict(row)
+        
+        # Okunan kitap sayısını hesapla
+        cursor.execute("""
+            SELECT COUNT(*) as count FROM books 
+            WHERE status = 'read' 
+                AND finish_date IS NOT NULL
+                AND strftime('%Y', finish_date) = ?
+        """, (str(goal["year"]),))
+        goal["completed"] = cursor.fetchone()["count"]
+        goal["progress"] = round((goal["completed"] / goal["target_books"]) * 100, 1) if goal["target_books"] > 0 else 0
+        goals.append(goal)
+    
+    conn.close()
+    return goals
+
+
+def delete_reading_goal(year: int) -> bool:
+    """Okuma hedefini siler."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("DELETE FROM reading_goals WHERE year = ?", (year,))
+    
+    conn.commit()
+    conn.close()
+    
+    return cursor.rowcount > 0
+
+
+# ==================== TOPLU İŞLEMLER ====================
+
+def bulk_update_books(book_ids: list, **kwargs) -> int:
+    """Birden fazla kitabı aynı anda günceller."""
+    if not book_ids:
+        return 0
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    now = datetime.now().isoformat()
+    kwargs["updated_at"] = now
+    
+    # Güvenli alan listesi
+    allowed_fields = [
+        "status", "rating", "shelf", "location", "format",
+        "start_date", "finish_date", "tags", "categories",
+        "language", "publisher", "updated_at"
+    ]
+    
+    updates = []
+    values = []
+    
+    for field, value in kwargs.items():
+        if field in allowed_fields:
+            updates.append(f"{field} = ?")
+            values.append(value)
+    
+    if not updates:
+        return 0
+    
+    # IN clause için placeholders
+    placeholders = ",".join("?" * len(book_ids))
+    values.extend(book_ids)
+    
+    cursor.execute(f"""
+        UPDATE books SET {", ".join(updates)} WHERE id IN ({placeholders})
+    """, values)
+    
+    updated = cursor.rowcount
+    conn.commit()
+    conn.close()
+    
+    return updated
+
+
+def bulk_delete_books(book_ids: list) -> int:
+    """Birden fazla kitabı siler."""
+    if not book_ids:
+        return 0
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    placeholders = ",".join("?" * len(book_ids))
+    
+    cursor.execute(f"DELETE FROM books WHERE id IN ({placeholders})", book_ids)
+    
+    deleted = cursor.rowcount
+    conn.commit()
+    conn.close()
+    
+    return deleted
+
+
+def bulk_add_to_shelf(book_ids: list, shelf_id: int) -> int:
+    """Birden fazla kitabı rafa ekler."""
+    if not book_ids:
+        return 0
+    
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    added = 0
+    for book_id in book_ids:
+        try:
+            cursor.execute("""
+                INSERT OR IGNORE INTO book_shelves (book_id, shelf_id)
+                VALUES (?, ?)
+            """, (book_id, shelf_id))
+            added += cursor.rowcount
+        except:
+            pass
+    
+    conn.commit()
+    conn.close()
+    
+    return added
+
+
+def copy_book(book_id: int) -> int:
+    """Kitabı kopyalar (şablon olarak kullanım için)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Mevcut kitabı al
+    cursor.execute("SELECT * FROM books WHERE id = ?", (book_id,))
+    book = cursor.fetchone()
+    
+    if not book:
+        conn.close()
+        return None
+    
+    now = datetime.now().isoformat()
+    
+    # Kopyalanacak alanlar (id, created_at, updated_at hariç)
+    fields = [
+        "title", "author", "isbn", "page_count", "publish_year", "publisher",
+        "cover_path", "subtitle", "description", "language", "categories",
+        "translator", "original_title", "original_language",
+        "series_name", "series_order", "format", "location", "tags"
+    ]
+    
+    values = [book[f] for f in fields]
+    
+    # Başlığa "(Kopya)" ekle
+    values[0] = f"{values[0]} (Kopya)"
+    
+    # Tarih alanları
+    values.extend([now, now])
+    fields.extend(["created_at", "updated_at"])
+    
+    placeholders = ",".join("?" * len(values))
+    field_names = ",".join(fields)
+    
+    cursor.execute(f"""
+        INSERT INTO books ({field_names}) VALUES ({placeholders})
+    """, values)
+    
+    new_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    
+    return new_id
+
+
+# ==================== SERİ İŞLEMLERİ ====================
+
+def get_all_series() -> list:
+    """Tüm serileri kitap sayılarıyla birlikte getirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT 
+            series_name,
+            COUNT(*) as book_count,
+            COUNT(CASE WHEN status = 'read' THEN 1 END) as read_count,
+            MIN(series_order) as min_order,
+            MAX(series_order) as max_order,
+            GROUP_CONCAT(DISTINCT author) as authors
+        FROM books 
+        WHERE series_name IS NOT NULL AND series_name != ''
+        GROUP BY series_name
+        ORDER BY series_name
+    """)
+    
+    series_list = []
+    for row in cursor.fetchall():
+        series_list.append({
+            "name": row["series_name"],
+            "book_count": row["book_count"],
+            "read_count": row["read_count"],
+            "min_order": row["min_order"],
+            "max_order": row["max_order"],
+            "authors": row["authors"],
+            "is_complete": row["read_count"] == row["book_count"],
+        })
+    
+    conn.close()
+    return series_list
+
+
+def get_books_in_series(series_name: str) -> list:
+    """Bir serideki tüm kitapları sıralı olarak getirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM books 
+        WHERE series_name = ?
+        ORDER BY series_order, title
+    """, (series_name,))
+    
+    books = cursor.fetchall()
+    conn.close()
+    
+    return books
+
+
+def get_series_stats(series_name: str) -> dict:
+    """Seri istatistiklerini getirir."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT 
+            COUNT(*) as total,
+            COUNT(CASE WHEN status = 'read' THEN 1 END) as read_count,
+            COUNT(CASE WHEN status = 'reading' THEN 1 END) as reading_count,
+            SUM(page_count) as total_pages,
+            SUM(CASE WHEN status = 'read' THEN page_count ELSE 0 END) as read_pages,
+            AVG(CASE WHEN rating > 0 THEN rating END) as avg_rating,
+            MIN(series_order) as min_order,
+            MAX(series_order) as max_order,
+            GROUP_CONCAT(DISTINCT author) as authors
+        FROM books 
+        WHERE series_name = ?
+    """, (series_name,))
+    
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row or row["total"] == 0:
+        return None
+    
+    return {
+        "name": series_name,
+        "total": row["total"],
+        "read_count": row["read_count"] or 0,
+        "reading_count": row["reading_count"] or 0,
+        "unread_count": row["total"] - (row["read_count"] or 0) - (row["reading_count"] or 0),
+        "total_pages": row["total_pages"] or 0,
+        "read_pages": row["read_pages"] or 0,
+        "avg_rating": round(row["avg_rating"], 1) if row["avg_rating"] else None,
+        "min_order": row["min_order"],
+        "max_order": row["max_order"],
+        "authors": row["authors"],
+        "is_complete": row["read_count"] == row["total"],
+        "progress": round((row["read_count"] or 0) / row["total"] * 100) if row["total"] > 0 else 0,
+    }
+
+
+def get_series_names() -> list:
+    """Mevcut seri isimlerini getirir (autocomplete için)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT DISTINCT series_name 
+        FROM books 
+        WHERE series_name IS NOT NULL AND series_name != ''
+        ORDER BY series_name
+    """)
+    
+    names = [row["series_name"] for row in cursor.fetchall()]
+    conn.close()
+    
+    return names
+
+
+# ==================== OKUMA LİSTESİ ====================
+
+def get_reading_list() -> list:
+    """Okuma listesindeki kitapları sıralı getirir (status='to_read')."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM books 
+        WHERE status = 'to_read'
+        ORDER BY reading_list_order ASC, id ASC
+    """)
+    
+    books = cursor.fetchall()
+    conn.close()
+    
+    return books
+
+
+def add_to_reading_list(book_id: int) -> bool:
+    """Kitabı okuma listesine ekler."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # En yüksek sırayı bul
+    cursor.execute("""
+        SELECT MAX(reading_list_order) as max_order 
+        FROM books WHERE status = 'to_read'
+    """)
+    result = cursor.fetchone()
+    max_order = result["max_order"] or 0
+    
+    # Kitabı güncelle
+    cursor.execute("""
+        UPDATE books 
+        SET status = 'to_read', reading_list_order = ?
+        WHERE id = ?
+    """, (max_order + 1, book_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return cursor.rowcount > 0
+
+
+def remove_from_reading_list(book_id: int) -> bool:
+    """Kitabı okuma listesinden çıkarır (okunmadı yapar)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        UPDATE books 
+        SET status = 'unread', reading_list_order = NULL
+        WHERE id = ?
+    """, (book_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return cursor.rowcount > 0
+
+
+def reorder_reading_list(book_ids: list) -> bool:
+    """Okuma listesini yeniden sıralar."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    for i, book_id in enumerate(book_ids, start=1):
+        cursor.execute("""
+            UPDATE books SET reading_list_order = ? WHERE id = ?
+        """, (i, book_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return True
+
+
+def move_in_reading_list(book_id: int, direction: str) -> bool:
+    """Kitabı listede yukarı/aşağı taşır."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    # Mevcut sırayı al
+    cursor.execute("SELECT reading_list_order FROM books WHERE id = ?", (book_id,))
+    result = cursor.fetchone()
+    if not result or not result["reading_list_order"]:
+        conn.close()
+        return False
+    
+    current_order = result["reading_list_order"]
+    
+    if direction == "up" and current_order > 1:
+        # Üstteki kitabı bul ve yer değiştir
+        cursor.execute("""
+            UPDATE books SET reading_list_order = ? 
+            WHERE status = 'to_read' AND reading_list_order = ?
+        """, (current_order, current_order - 1))
+        cursor.execute("""
+            UPDATE books SET reading_list_order = ? WHERE id = ?
+        """, (current_order - 1, book_id))
+        
+    elif direction == "down":
+        # Alttaki kitabı bul ve yer değiştir
+        cursor.execute("""
+            UPDATE books SET reading_list_order = ? 
+            WHERE status = 'to_read' AND reading_list_order = ?
+        """, (current_order, current_order + 1))
+        cursor.execute("""
+            UPDATE books SET reading_list_order = ? WHERE id = ?
+        """, (current_order + 1, book_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return True
+
+
+def get_books_to_read_candidates() -> list:
+    """Okuma listesine eklenebilecek kitapları getirir (unread olanlar)."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        SELECT * FROM books 
+        WHERE status = 'unread'
+        ORDER BY title ASC
+    """)
+    
+    books = cursor.fetchall()
+    conn.close()
+    
+    return books
 
 
 # Bu dosya doğrudan çalıştırılırsa test et

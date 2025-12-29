@@ -700,22 +700,44 @@ class StatsDialog(QDialog):
         """Hedef verilerini yükler."""
         goal_data = db.get_reading_goal(self.current_year)
         
-        self.goal_spinbox.setValue(goal_data["goal"])
-        self.goal_progress.setValue(goal_data["percentage"])
+        # Hedef yoksa varsayılan değerler
+        if goal_data is None:
+            self.goal_spinbox.setValue(0)
+            self.goal_progress.setValue(0)
+            self.goal_progress.setFormat("Hedef belirlenmedi")
+            self.goal_status.setText("🎯 Yıllık hedef belirle!")
+            self.goal_status.setStyleSheet("color: #858585; font-size: 14px; padding: 10px;")
+            self.goal_detail.setText("Görünüm → Okuma Hedefi menüsünden hedef belirleyebilirsin")
+            return
         
-        if goal_data["goal"] > 0:
+        # Yeni veritabanı formatına uyum
+        goal = goal_data.get("target_books", 0)
+        read = goal_data.get("completed", 0)
+        percentage = int(goal_data.get("progress", 0))
+        
+        self.goal_spinbox.setValue(goal)
+        self.goal_progress.setValue(min(percentage, 100))
+        
+        if goal > 0:
             self.goal_progress.setFormat(
-                f"{goal_data['read']} / {goal_data['goal']} kitap ({goal_data['percentage']}%)"
+                f"{read} / {goal} kitap ({percentage}%)"
             )
             
-            if goal_data["on_track"]:
+            # Hedefte mi kontrolü
+            import datetime
+            day_of_year = datetime.datetime.now().timetuple().tm_yday
+            expected = (goal * day_of_year) / 365
+            on_track = read >= expected
+            remaining = max(0, goal - read)
+            
+            if on_track:
                 self.goal_status.setText("✅ Hedefte gidiyorsun!")
                 self.goal_status.setStyleSheet("color: #00B294; font-size: 14px; padding: 10px;")
             else:
                 self.goal_status.setText("⚠️ Biraz geride kaldın")
                 self.goal_status.setStyleSheet("color: #FFB900; font-size: 14px; padding: 10px;")
             
-            self.goal_detail.setText(f"{goal_data['remaining']} kitap daha okumalısın")
+            self.goal_detail.setText(f"{remaining} kitap daha okumalısın")
         else:
             self.goal_progress.setFormat("Hedef belirlenmedi")
             self.goal_status.setText("Yukarıdan hedef belirle")

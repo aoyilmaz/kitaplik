@@ -12,29 +12,21 @@ import database as db
 from ui.main_window import MainWindow
 
 
-import os
-from PyQt6.QtCore import QLibraryInfo
-
-os.environ["QT_PLUGIN_PATH"] = QLibraryInfo.path(
-    QLibraryInfo.LibraryPath.PluginsPath
-)
-
-
 def main():
     """
     Uygulamayı başlatır.
     """
     # Veritabanını hazırla (yoksa oluşturur)
     db.init_database()
-
+    
     # Qt uygulaması oluştur
     # sys.argv: Komut satırı argümanları (Qt bunları kullanabilir)
     app = QApplication(sys.argv)
-
+    
     # Ana pencereyi oluştur ve göster
     window = MainWindow()
     window.show()
-
+    
     # Uygulama döngüsünü başlat
     # Bu satır uygulamayı "canlı" tutar
     # Kullanıcı pencereyi kapatana kadar çalışır

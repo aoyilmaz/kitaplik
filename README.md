@@ -7,40 +7,67 @@ Kişisel kitap koleksiyonunuzu yönetmek için modern ve kullanıcı dostu bir m
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-<p align="center">
-  <img src="docs/screenshot.png" alt="Kitaplığım Ekran Görüntüsü" width="800">
-</p>
-
 ## ✨ Özellikler
 
 ### 📖 Kitap Yönetimi
-- **Online Arama**: Google Books, Open Library, Kitapyurdu ve daha fazlasından kitap bilgilerini otomatik çek
-- **Manuel Ekleme**: 40+ alan ile detaylı kitap kaydı
-- **Kapak Görselleri**: Online arama veya dosyadan kapak ekleme
-- **Toplu İçe Aktarma**: CSV ve Excel dosyalarından kitap listesi yükle
+- **Online Arama**: Google Books, Open Library, Kitapyurdu, İdefix, BKM Kitap ve daha fazlasından kitap bilgilerini otomatik çek
+- **Manuel Ekleme**: 40+ alan ile detaylı kitap kaydı (çeviri bilgileri, satın alma, konum vb.)
+- **Kapak Görselleri**: Çoklu kaynaktan kapak arama veya dosyadan ekleme
+- **Toplu İşlemler**: Çoklu seçim ile toplu düzenleme, silme ve rafa ekleme
+- **Kitap Kopyalama**: Mevcut kitabı şablon olarak kullanarak hızlı ekleme
+- **Alıntılar**: Her kitaptan sevilen cümleleri sayfa numarası ile kaydet
+
+### 📚 Kitap Serileri
+- Serileri otomatik grupla
+- Seri içi okuma durumu takibi
+- Seri tamamlama yüzdesi
+- Serideki diğer kitapları görüntüleme
+
+### 📋 Okuma Listesi
+- **5 Farklı Durum**: Okunmadı, Okuyacağım, Okunuyor, Okundu, Okumayacağım
+- **Sıralı Liste**: Sürükle-bırak ile okuma sırası belirleme
+- **Tahmini Süre**: Günlük sayfa hızına göre bitiş tarihi hesaplama
+- **İstatistikler**: Toplam sayfa, tahmini gün ve saat
+
+### 🎯 Okuma Takibi
+- Sayfa takibi (şu an hangi sayfadasın)
+- Okuma tarihleri (başlama ve bitirme)
+- Yıllık okuma hedefi belirleme ve takip
+- Okuma sayısı
 
 ### 🗂️ Organizasyon
-- **Raflar**: Kitaplarınızı özel raflarda düzenleyin (Favoriler, Okunacaklar, vb.)
-- **Filtreleme**: Durum, yıl ve metin ile hızlı filtreleme
-- **Sıralama**: Başlık, yazar, yıl, puan ve ekleme tarihine göre sırala
-- **Arama**: Anlık arama ile kitaplarınızı bulun
+- **Raflar**: Özel raflar oluşturun (Favoriler, Okunacaklar, vb.)
+- **Filtreleme**: Durum, yıl, puan ve metin ile hızlı filtreleme
+- **Sıralama**: Tüm sütunlara göre sıralama
+- **Anlık Arama**: Başlık, yazar, ISBN ile arama
 
-### 📊 İstatistikler
-- Okuma durumu dağılımı
-- Yıllara göre yayın analizi
-- En çok okunan yazarlar
-- Yayınevi dağılımı
-- Sayfa ve puan istatistikleri
-- Aylık okuma grafiği
+### 📊 İstatistikler (7 Sekmeli)
+1. **Genel Bakış**: Toplam kitap, sayfa, okuma durumu dağılımı
+2. **Yazarlar**: En çok okunan yazarlar grafiği
+3. **Yayınevleri**: Yayınevi dağılımı
+4. **Yıllar**: Yayın yılı analizi
+5. **Okuma Hızı**: Aylık okuma grafiği, en hızlı/yavaş okunan kitaplar
+6. **Puanlar**: Puan dağılımı, en yüksek puanlı kitaplar
+7. **Hedef**: Yıllık okuma hedefi takibi
+
+### 🤖 AI Asistan (Ollama)
+- **Kişiselleştirilmiş Öneriler**: Kitaplığına göre kitap önerileri
+- **Okuma Analizi**: Okuma alışkanlıklarını analiz
+- **Okuma Planı**: Okunmamış kitaplar için plan oluşturma
+- **Serbest Soru**: Kitaplar hakkında her şeyi sor
+- Tamamen yerel, internet gerektirmez
 
 ### 🎨 Arayüz
-- VS Code tarzı modern koyu tema
-- Grid ve liste görünümü
+- VS Code tarzı modern koyu/açık tema
+- Grid (kapak) ve liste görünümü
 - Özelleştirilebilir sütunlar
 - Açılıp kapanabilen kenar çubuğu
+- Satır içi düzenleme (çift tık)
 
-### 📤 Dışa Aktarma
-- CSV, JSON ve Excel formatlarında dışa aktarma
+### 📤 İçe/Dışa Aktarma
+- **İçe Aktar**: CSV ve Excel dosyalarından toplu kitap yükleme
+- **Dışa Aktar**: CSV, JSON ve Excel formatlarında dışa aktarma
+- Akıllı sütun eşleştirme
 
 ## 🚀 Kurulum
 
@@ -50,31 +77,34 @@ Kişisel kitap koleksiyonunuzu yönetmek için modern ve kullanıcı dostu bir m
 
 ### Adımlar
 
-1. **Repoyu klonlayın**
 ```bash
-git clone https://github.com/KULLANICI_ADIN/kitaplik.git
+# 1. Repoyu klonlayın
+git clone https://github.com/okan-aydogan/kitaplik.git
 cd kitaplik
-```
 
-2. **Sanal ortam oluşturun (önerilen)**
-```bash
+# 2. Sanal ortam oluşturun (önerilen)
 python -m venv venv
+source venv/bin/activate  # macOS/Linux
+# venv\Scripts\activate   # Windows
 
-# Windows
-venv\Scripts\activate
-
-# macOS/Linux
-source venv/bin/activate
-```
-
-3. **Bağımlılıkları yükleyin**
-```bash
+# 3. Bağımlılıkları yükleyin
 pip install -r requirements.txt
+
+# 4. Uygulamayı çalıştırın
+python main.py
 ```
 
-4. **Uygulamayı çalıştırın**
+### AI Asistan için (Opsiyonel)
+
 ```bash
-python main.py
+# Ollama'yı kurun (macOS)
+brew install ollama
+
+# Model indirin
+ollama pull mistral
+
+# Ollama'yı başlatın (arka planda çalışır)
+ollama serve
 ```
 
 ## 📦 Bağımlılıklar
@@ -82,52 +112,22 @@ python main.py
 | Paket | Açıklama |
 |-------|----------|
 | PyQt6 | Modern GUI framework |
-| requests | HTTP istekleri (API aramaları) |
+| requests | HTTP istekleri (API aramaları, Ollama) |
 | openpyxl | Excel dosyası desteği |
 
-## 🎯 Kullanım
-
-### Kitap Ekleme
-
-**Online Arama ile:**
-1. `Ctrl+N` veya Kitap Ekle → Online Arama
-2. Kitap adı, yazar veya ISBN ile arayın
-3. Sonuçlardan birini seçin
-4. Kaydet
-
-**Manuel:**
-1. `Ctrl+M` veya Kitap Ekle → Manuel Ekle
-2. Bilgileri doldurun
-3. Kapak eklemek için "🔍 Kapak Ara" butonunu kullanın
-4. Kaydet
-
-### CSV/Excel'den İçe Aktarma
-
-1. Dosya → 📥 İçe Aktar
-2. CSV veya Excel dosyanızı seçin
-3. Sütunları eşleştirin (otomatik algılanır)
-4. İçe Aktar
-
-**Desteklenen sütunlar:**
-- Kitap_Adı / Başlık → Kitap başlığı
-- Yazar → Yazar adı
-- Yayınevi → Yayınevi
-- Sayfa_Sayısı → Sayfa sayısı
-- Yayın_Yılı → Yayın yılı
-- Okuma Durumu → Okundu/Okunuyor/Okunmadı
-- Raf → Raf adı (otomatik oluşturulur)
-
-### Klavye Kısayolları
+## ⌨️ Klavye Kısayolları
 
 | Kısayol | İşlev |
 |---------|-------|
 | `Ctrl+N` | Online arama ile kitap ekle |
-| `Ctrl+M` | Manuel kitap ekle |
-| `Ctrl+F` | Arama kutusuna odaklan |
-| `Ctrl+I` | İstatistikleri göster |
+| `Ctrl+Shift+N` | Manuel kitap ekle |
+| `Ctrl+L` | Okuma listesi |
+| `Ctrl+I` | İstatistikler |
 | `Ctrl+B` | Kenar çubuğunu aç/kapat |
-| `Ctrl+Q` | Uygulamadan çık |
+| `Ctrl+Shift+A` | AI Asistan |
+| `Ctrl+Q` | Çıkış |
 | `Delete` | Seçili kitabı sil |
+| `Ctrl+Click` | Çoklu seçim |
 
 ## 📁 Proje Yapısı
 
@@ -139,10 +139,11 @@ kitaplik/
 ├── assets/
 │   └── covers/          # İndirilen kapak görselleri
 ├── services/
-│   └── book_api.py      # Kitap arama API'leri
+│   ├── book_api.py      # Kitap arama API'leri
+│   └── ai_service.py    # Ollama AI entegrasyonu
 └── ui/
-    ├── main_window.py   # Ana pencere
-    ├── book_dialog.py   # Kitap ekleme/düzenleme dialogları
+    ├── main_window.py   # Ana pencere ve dialoglar
+    ├── book_dialog.py   # Kitap ekleme/düzenleme
     ├── shelf_panel.py   # Raf paneli
     ├── filter_bar.py    # Filtre çubuğu
     ├── stats_dialog.py  # İstatistik dialogu
@@ -151,33 +152,33 @@ kitaplik/
 
 ## 🗄️ Veritabanı
 
-Uygulama SQLite veritabanı kullanır. İlk çalıştırmada `kitaplik.db` dosyası otomatik oluşturulur.
+SQLite veritabanı kullanılır. İlk çalıştırmada `kitaplik.db` otomatik oluşturulur.
 
 **Tablolar:**
 - `books` - Kitap bilgileri (40+ alan)
 - `shelves` - Raflar
 - `book_shelves` - Kitap-raf ilişkileri
+- `quotes` - Kitap alıntıları
+- `reading_goals` - Yıllık okuma hedefleri
+- `settings` - Uygulama ayarları
 
-## 🤝 Katkıda Bulunma
+## 🚧 Gelecek Özellikler
 
-1. Bu repoyu fork edin
-2. Feature branch oluşturun (`git checkout -b feature/yeni-ozellik`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Yeni özellik eklendi'`)
-4. Branch'inizi push edin (`git push origin feature/yeni-ozellik`)
-5. Pull Request açın
+- [ ] Goodreads entegrasyonu
+- [ ] Yedekleme/Geri yükleme
+- [ ] Çoklu dil desteği
+- [ ] Kullanıcı profilleri
+- [ ] Bulut senkronizasyonu
 
 ## 📝 Lisans
 
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICENSE) dosyasına bakın.
+Bu proje MIT lisansı altında lisanslanmıştır.
 
 ## 🙏 Teşekkürler
 
-- [Google Books API](https://developers.google.com/books) - Kitap verileri
-- [Open Library](https://openlibrary.org/) - Açık kitap veritabanı
-- [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) - GUI framework
+- [Google Books API](https://developers.google.com/books)
+- [Open Library](https://openlibrary.org/)
+- [Ollama](https://ollama.ai/)
+- [PyQt6](https://www.riverbankcomputing.com/software/pyqt/)
 
 ---
-
-<p align="center">
-  Claude ile ❤️ ile yapıldı
-</p>
