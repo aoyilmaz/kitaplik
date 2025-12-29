@@ -225,6 +225,52 @@ class MainWindow(QMainWindow):
         theme_menu.addAction(THEME_NAMES["light"], lambda: self.apply_theme("light"))
         theme_menu.addAction(THEME_NAMES["dark"], lambda: self.apply_theme("dark"))
         view_menu.addMenu(theme_menu)
+        
+        # === Yardım Menüsü ===
+        help_menu = menubar.addMenu("Yardım")
+        
+        # Başlangıç rehberi
+        guide_action = QAction("📖 Başlangıç Rehberi", self)
+        guide_action.triggered.connect(self.show_guide)
+        help_menu.addAction(guide_action)
+        
+        # Klavye kısayolları
+        shortcuts_action = QAction("⌨️ Klavye Kısayolları", self)
+        shortcuts_action.setShortcut("F1")
+        shortcuts_action.triggered.connect(self.show_shortcuts)
+        help_menu.addAction(shortcuts_action)
+        
+        # Özellikler
+        features_action = QAction("✨ Özellikler", self)
+        features_action.triggered.connect(self.show_features)
+        help_menu.addAction(features_action)
+        
+        help_menu.addSeparator()
+        
+        # Hakkında
+        about_action = QAction("ℹ️ Hakkında", self)
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
+    
+    def show_guide(self):
+        """Başlangıç rehberini gösterir."""
+        dialog = HelpDialog(self, "guide")
+        dialog.exec()
+    
+    def show_shortcuts(self):
+        """Klavye kısayollarını gösterir."""
+        dialog = HelpDialog(self, "shortcuts")
+        dialog.exec()
+    
+    def show_features(self):
+        """Özellikleri gösterir."""
+        dialog = HelpDialog(self, "features")
+        dialog.exec()
+    
+    def show_about(self):
+        """Hakkında dialogunu gösterir."""
+        dialog = HelpDialog(self, "about")
+        dialog.exec()
     
     def show_stats(self):
         """İstatistik penceresini açar."""
@@ -3179,3 +3225,298 @@ Türkçe ve yardımcı bir şekilde yanıtla."""
         self.worker.finished.connect(self.on_response)
         self.worker.error.connect(self.on_error)
         self.worker.start()
+
+
+# ============================================================
+# YARDIM DIALOG'U
+# ============================================================
+
+class HelpDialog(QDialog):
+    """Yardım dialog'u - Rehber, kısayollar, özellikler, hakkında."""
+    
+    def __init__(self, parent=None, page: str = "guide"):
+        super().__init__(parent)
+        
+        self.setWindowTitle("📚 Kitaplığım - Yardım")
+        self.setMinimumSize(700, 550)
+        self.setModal(True)
+        
+        self.setup_ui()
+        self.show_page(page)
+    
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+        layout.setSpacing(15)
+        
+        # Başlık
+        self.title_label = QLabel()
+        self.title_label.setStyleSheet("font-size: 20px; font-weight: bold; padding: 10px;")
+        layout.addWidget(self.title_label)
+        
+        # İçerik
+        self.content_text = QTextEdit()
+        self.content_text.setReadOnly(True)
+        self.content_text.setStyleSheet("""
+            QTextEdit {
+                background-color: #1E1E1E;
+                border: 1px solid #3C3C3C;
+                border-radius: 8px;
+                padding: 15px;
+                font-size: 13px;
+                line-height: 1.6;
+            }
+        """)
+        layout.addWidget(self.content_text, stretch=1)
+        
+        # Butonlar
+        btn_layout = QHBoxLayout()
+        
+        guide_btn = QPushButton("📖 Rehber")
+        guide_btn.clicked.connect(lambda: self.show_page("guide"))
+        btn_layout.addWidget(guide_btn)
+        
+        shortcuts_btn = QPushButton("⌨️ Kısayollar")
+        shortcuts_btn.clicked.connect(lambda: self.show_page("shortcuts"))
+        btn_layout.addWidget(shortcuts_btn)
+        
+        features_btn = QPushButton("✨ Özellikler")
+        features_btn.clicked.connect(lambda: self.show_page("features"))
+        btn_layout.addWidget(features_btn)
+        
+        about_btn = QPushButton("ℹ️ Hakkında")
+        about_btn.clicked.connect(lambda: self.show_page("about"))
+        btn_layout.addWidget(about_btn)
+        
+        btn_layout.addStretch()
+        
+        close_btn = QPushButton("Kapat")
+        close_btn.clicked.connect(self.accept)
+        btn_layout.addWidget(close_btn)
+        
+        layout.addLayout(btn_layout)
+    
+    def show_page(self, page: str):
+        """Belirtilen sayfayı gösterir."""
+        pages = {
+            "guide": self.get_guide_content,
+            "shortcuts": self.get_shortcuts_content,
+            "features": self.get_features_content,
+            "about": self.get_about_content,
+        }
+        
+        titles = {
+            "guide": "📖 Başlangıç Rehberi",
+            "shortcuts": "⌨️ Klavye Kısayolları",
+            "features": "✨ Özellikler",
+            "about": "ℹ️ Hakkında",
+        }
+        
+        self.title_label.setText(titles.get(page, "Yardım"))
+        content = pages.get(page, self.get_guide_content)()
+        self.content_text.setHtml(content)
+    
+    def get_guide_content(self) -> str:
+        return """
+        <h2>🚀 Hızlı Başlangıç</h2>
+        
+        <h3>📚 Kitap Ekleme</h3>
+        <p><b>Online Arama ile (Önerilen):</b></p>
+        <ol>
+            <li><code>Ctrl+N</code> veya <b>Dosya → Ara ve Ekle</b></li>
+            <li>Kitap adı, yazar veya ISBN ile arayın</li>
+            <li>Sonuçlardan birini seçin</li>
+            <li>Bilgileri kontrol edip <b>Kaydet</b></li>
+        </ol>
+        
+        <p><b>Manuel Ekleme:</b></p>
+        <ol>
+            <li><code>Ctrl+Shift+N</code> veya <b>Dosya → Manuel Ekle</b></li>
+            <li>Bilgileri doldurun (sadece başlık zorunlu)</li>
+            <li><b>🔍 Kapak Ara</b> ile kapak bulun</li>
+            <li><b>Kaydet</b></li>
+        </ol>
+        
+        <h3>📋 Okuma Listesi Kullanımı</h3>
+        <ol>
+            <li>Kitabın durumunu <b>📋 Okuyacağım</b> yapın</li>
+            <li><b>Kitaplık → Okuma Listesi</b> açın (<code>Ctrl+L</code>)</li>
+            <li>Sürükle-bırak ile sıralayın</li>
+            <li>Okuma hızınızı ayarlayın</li>
+            <li>Tahmini bitiş tarihini görün</li>
+        </ol>
+        
+        <h3>🗂️ Raflar</h3>
+        <p>Sol panelden:</p>
+        <ul>
+            <li><b>+ Raf Ekle</b> ile yeni raf oluşturun</li>
+            <li>Kitaba sağ tık → <b>Rafa Ekle</b></li>
+            <li>Bir kitap birden fazla rafta olabilir</li>
+        </ul>
+        
+        <h3>🤖 AI Asistan</h3>
+        <ol>
+            <li>Ollama'yı kurun: <code>brew install ollama</code></li>
+            <li>Model indirin: <code>ollama pull mistral</code></li>
+            <li><b>Kitaplık → AI Asistan</b> açın (<code>Ctrl+Shift+A</code>)</li>
+            <li>Kitap önerisi, okuma analizi veya soru sorun</li>
+        </ol>
+        
+        <h3>💡 İpuçları</h3>
+        <ul>
+            <li><b>Çoklu seçim:</b> <code>Ctrl+Click</code> ile birden fazla kitap seçin</li>
+            <li><b>Hızlı düzenleme:</b> Tabloda çift tık ile düzenleyin</li>
+            <li><b>Kapak görünümü:</b> Görünüm → Grid moduna geçin</li>
+            <li><b>Seri takibi:</b> Kitap formunda Seri sekmesinden seri bilgisi girin</li>
+        </ul>
+        """
+    
+    def get_shortcuts_content(self) -> str:
+        return """
+        <h2>⌨️ Klavye Kısayolları</h2>
+        
+        <h3>📚 Kitap İşlemleri</h3>
+        <table width="100%" cellpadding="8">
+            <tr><td width="40%"><code>Ctrl+N</code></td><td>Online arama ile kitap ekle</td></tr>
+            <tr><td><code>Ctrl+Shift+N</code></td><td>Manuel kitap ekle</td></tr>
+            <tr><td><code>Delete</code></td><td>Seçili kitabı sil</td></tr>
+            <tr><td><code>Ctrl+Click</code></td><td>Çoklu seçim</td></tr>
+            <tr><td><code>Shift+Click</code></td><td>Aralık seçimi</td></tr>
+            <tr><td><code>Çift tık</code></td><td>Kitabı düzenle</td></tr>
+        </table>
+        
+        <h3>📋 Görünüm</h3>
+        <table width="100%" cellpadding="8">
+            <tr><td width="40%"><code>Ctrl+L</code></td><td>Okuma listesi</td></tr>
+            <tr><td><code>Ctrl+I</code></td><td>İstatistikler</td></tr>
+            <tr><td><code>Ctrl+B</code></td><td>Kenar çubuğunu aç/kapat</td></tr>
+            <tr><td><code>Ctrl+Shift+A</code></td><td>AI Asistan</td></tr>
+        </table>
+        
+        <h3>🔧 Genel</h3>
+        <table width="100%" cellpadding="8">
+            <tr><td width="40%"><code>Ctrl+Q</code></td><td>Uygulamadan çık</td></tr>
+            <tr><td><code>F1</code></td><td>Bu yardım penceresi</td></tr>
+            <tr><td><code>Escape</code></td><td>Dialog'u kapat</td></tr>
+        </table>
+        
+        <h3>📝 Tabloda Gezinme</h3>
+        <table width="100%" cellpadding="8">
+            <tr><td width="40%"><code>↑ ↓</code></td><td>Yukarı/aşağı git</td></tr>
+            <tr><td><code>Page Up/Down</code></td><td>Sayfa sayfa git</td></tr>
+            <tr><td><code>Home/End</code></td><td>İlk/son satıra git</td></tr>
+        </table>
+        """
+    
+    def get_features_content(self) -> str:
+        return """
+        <h2>✨ Tüm Özellikler</h2>
+        
+        <h3>📖 Kitap Yönetimi</h3>
+        <ul>
+            <li><b>Online Arama:</b> Google Books, Open Library, Kitapyurdu, İdefix, BKM Kitap</li>
+            <li><b>40+ Alan:</b> Çeviri bilgileri, satın alma, konum, etiketler ve daha fazlası</li>
+            <li><b>Kapak Görselleri:</b> Çoklu kaynaktan arama veya dosyadan ekleme</li>
+            <li><b>Toplu İşlemler:</b> Çoklu seçim ile düzenleme, silme, rafa ekleme</li>
+            <li><b>Kitap Kopyalama:</b> Mevcut kitabı şablon olarak kullan</li>
+            <li><b>Alıntılar:</b> Sevilen cümleleri sayfa numarası ile kaydet</li>
+        </ul>
+        
+        <h3>📚 Kitap Serileri</h3>
+        <ul>
+            <li>Serileri otomatik grupla</li>
+            <li>Seri içi okuma durumu takibi</li>
+            <li>Seri tamamlama yüzdesi</li>
+            <li>Kitap formunda serideki diğer kitapları gör</li>
+        </ul>
+        
+        <h3>📋 Okuma Listesi</h3>
+        <ul>
+            <li><b>5 Durum:</b> Okunmadı, Okuyacağım, Okunuyor, Okundu, Okumayacağım</li>
+            <li><b>Sıralama:</b> Sürükle-bırak ile okuma sırası</li>
+            <li><b>Tahmini Süre:</b> Günlük sayfa hızına göre hesaplama</li>
+            <li><b>Bitiş Tarihi:</b> Tüm listeyi ne zaman bitirirsin</li>
+        </ul>
+        
+        <h3>🎯 Okuma Takibi</h3>
+        <ul>
+            <li>Mevcut sayfa takibi</li>
+            <li>Başlama ve bitirme tarihleri</li>
+            <li>Yıllık okuma hedefi</li>
+            <li>Okuma sayısı</li>
+        </ul>
+        
+        <h3>📊 İstatistikler (7 Sekme)</h3>
+        <ul>
+            <li><b>Genel:</b> Toplam kitap, sayfa, durum dağılımı</li>
+            <li><b>Yazarlar:</b> En çok okunan yazarlar</li>
+            <li><b>Yayınevleri:</b> Yayınevi dağılımı</li>
+            <li><b>Yıllar:</b> Yayın yılı analizi</li>
+            <li><b>Okuma Hızı:</b> Aylık okuma, en hızlı/yavaş kitap</li>
+            <li><b>Puanlar:</b> Puan dağılımı</li>
+            <li><b>Hedef:</b> Yıllık hedef takibi</li>
+        </ul>
+        
+        <h3>🤖 AI Asistan (Ollama)</h3>
+        <ul>
+            <li>Kişiselleştirilmiş kitap önerileri</li>
+            <li>Okuma alışkanlıkları analizi</li>
+            <li>Okuma planı oluşturma</li>
+            <li>Serbest soru sorma</li>
+            <li>Tamamen yerel, internet gerektirmez</li>
+        </ul>
+        
+        <h3>🎨 Arayüz</h3>
+        <ul>
+            <li>Koyu ve açık tema</li>
+            <li>Grid (kapak) ve liste görünümü</li>
+            <li>Özelleştirilebilir sütunlar</li>
+            <li>Satır içi düzenleme</li>
+        </ul>
+        
+        <h3>📤 İçe/Dışa Aktarma</h3>
+        <ul>
+            <li><b>İçe:</b> CSV, Excel</li>
+            <li><b>Dışa:</b> CSV, JSON, Excel</li>
+        </ul>
+        """
+    
+    def get_about_content(self) -> str:
+        return """
+        <div style="text-align: center; padding: 20px;">
+            <h1>📚 Kitaplığım</h1>
+            <p style="font-size: 16px; color: #888;">Versiyon 1.0</p>
+            
+            <p style="margin-top: 30px; font-size: 14px;">
+                Kişisel kitap koleksiyonunuzu yönetmek için<br>
+                modern ve kullanıcı dostu bir masaüstü uygulaması.
+            </p>
+            
+            <hr style="margin: 30px 0; border-color: #3C3C3C;">
+            
+            <h3>🛠️ Teknolojiler</h3>
+            <p>
+                <b>Python 3.10+</b> • <b>PyQt6</b> • <b>SQLite</b><br>
+                <b>Ollama</b> (AI Asistan için)
+            </p>
+            
+            <h3>📚 Veri Kaynakları</h3>
+            <p>
+                Google Books API • Open Library<br>
+                Kitapyurdu • İdefix • BKM Kitap
+            </p>
+            
+            <hr style="margin: 30px 0; border-color: #3C3C3C;">
+            
+            <p style="color: #888;">
+                MIT Lisansı ile lisanslanmıştır.
+            </p>
+            
+            <p style="margin-top: 20px; font-size: 18px;">
+                Claude ile ❤️ yapıldı
+            </p>
+            
+            <p style="color: #888; font-size: 12px; margin-top: 30px;">
+                © 2024 Kitaplığım
+            </p>
+        </div>
+        """
